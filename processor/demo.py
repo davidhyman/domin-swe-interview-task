@@ -1,7 +1,6 @@
 import itertools
 from pathlib import Path
 
-import numpy
 from typing import List, Generator, Iterable
 from typing import Tuple
 
@@ -42,14 +41,19 @@ def gen_rising_edge(data: Iterable[float|int], threshold: float) -> Generator[bo
 def output_event(name: str, timestamp: float, event: bool) -> None:
     if not event:
         return
+
+    # could use rotating file handlers from `logging`
+    # to manage file sizes
+    # or get a real database
     with OUTFILE.open("a") as fh:
         fh.write(f"{timestamp},{name}\n")
 
 
 def run():
     data = [0] * 1000 + [1] * 1000 + [0] * 1000
+    OUTFILE.unlink()
 
-    # working with generators allows us to compose processing pipelines in a functional style
+    # working with generators allows us to compose streaming processing pipelines in a functional style
 
     # we split our source data before handing it to individual processing pipelines
     # so that they can increment at their own pace
@@ -64,7 +68,7 @@ def run():
     analyse_rising_edge_of_runlength = gen_rising_edge(analyse_runlength, 9)
 
     counter = 0
-    for value in raw_data:
+    for _ in raw_data:  # this iteration represents the indefinitely long stream
         counter += 1
 
         event = next(analyse_rising_edge_of_runlength)
